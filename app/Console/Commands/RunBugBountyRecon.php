@@ -64,7 +64,7 @@ class RunBugBountyRecon extends Command
                     }
 
                     // (e.g., *.post.ch)
-                    $wildcardMatch = OutOfScope::where('subdomain', 'like', "%.$subdomain")->exists();
+                    $wildcardMatch = OutOfScope::where('subdomain', 'like', "%$subdomain%")->exists();
 
                     if ($wildcardMatch) {
                         $this->info("The subdomain $subdomain matches a wildcard out of scope and will not be saved.");
