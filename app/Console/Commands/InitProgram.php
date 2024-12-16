@@ -66,7 +66,7 @@ class InitProgram extends Command
          foreach($out_of_scope as $out_of_scope_item) {
             OutOfScope::create([
                 'program_id' => $program->id,
-                'out_of_scope' => trim($out_of_scope_item),
+                'wildcard' => trim($out_of_scope_item),
             ]);
             $this->info("Assigning out_of_scope {$out_of_scope_item}");
          }
