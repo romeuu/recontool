@@ -3,6 +3,9 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
+use App\Models\Program;
+use App\Models\Subdomain;
+use App\Models\OutOfScope;
 
 class RunBugBountyRecon extends Command
 {
