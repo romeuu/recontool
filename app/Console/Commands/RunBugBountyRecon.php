@@ -34,58 +34,61 @@ class RunBugBountyRecon extends Command
         $bar = $this->output->createProgressBar(count($programs));
         $bar->start();
         foreach ($programs as $program) {
-            $wildcard = $program->wildcard;
+            $wildcards = $program->wildcards()->get();
 
-            $this->info("Starting search for wildcard: $wildcard");
+            foreach($wildcards as $wildcard) {
+                $this->info("Starting search for wildcard: $wildcard->wildcard");
 
-            // Execute assetfinder
-            $assetFinderOutput = shell_exec("assetfinder --subs-only $wildcard");
-
+                // Execute assetfinder
+                $assetFinderOutput = shell_exec("assetfinder --subs-only $wildcard->wildcard");
+                
+                $this->info($assetFinderOutput);
                 // Saving in .txt
-            $assetFinderFilePath = storage_path("app/assetfinder_{$wildcard}.txt");
-            file_put_contents($assetFinderFilePath, $assetFinderOutput);
-
-            
-            $this->info("Testing subdomains with httprobe");
-
-            // Execute httprobe to check subdomains
-            $httprobeOutput = shell_exec("cat $assetFinderFilePath | httprobe");
-
-            // Save valid subdomains to the database
-            $validSubdomains = explode("\n", $httprobeOutput);
-
-            $this->info("Found " . count($validSubdomains) . " valid subdomains.");
-
-            foreach ($validSubdomains as $subdomain) {
-                if (!empty($subdomain)) {
-                    $isOutOfScopeExact = OutOfScope::where('subdomain', $subdomain)->exists();
-
-                    if ($isOutOfScopeExact) {
-                        $this->info("The exact subdomain $subdomain is out of scope and will not be saved.");
-                        continue;
+                $assetFinderFilePath = storage_path("app/assetfinder_{$wildcard->wildcard}.txt");
+                file_put_contents($assetFinderFilePath, $assetFinderOutput);
+    
+                
+                $this->info("Testing subdomains with httprobe");
+    
+                // Execute httprobe to check subdomains
+                $httprobeOutput = shell_exec("cat $assetFinderFilePath | httprobe");
+    
+                // Save valid subdomains to the database
+                $validSubdomains = explode("\n", $httprobeOutput);
+    
+                $this->info("Found " . count($validSubdomains) . " valid subdomains.");
+    
+                foreach ($validSubdomains as $subdomain) {
+                    if (!empty($subdomain)) {
+                        $isOutOfScopeExact = OutOfScope::where('subdomain', $subdomain)->exists();
+    
+                        if ($isOutOfScopeExact) {
+                            $this->info("The exact subdomain $subdomain is out of scope and will not be saved.");
+                            continue;
+                        }
+    
+                        // (e.g., *.post.ch)
+                        $wildcardMatch = OutOfScope::where('subdomain', 'like', "%$subdomain%")->exists();
+    
+                        if ($wildcardMatch) {
+                            $this->info("The subdomain $subdomain matches a wildcard out of scope and will not be saved.");
+                            continue;
+                        }
+    
+                        Subdomain::create([
+                            'program_id' => $program->id,
+                            'subdomain' => $subdomain,
+                        ]);
+                        $this->info("Valid subdomain found: $subdomain");
                     }
-
-                    // (e.g., *.post.ch)
-                    $wildcardMatch = OutOfScope::where('subdomain', 'like', "%$subdomain%")->exists();
-
-                    if ($wildcardMatch) {
-                        $this->info("The subdomain $subdomain matches a wildcard out of scope and will not be saved.");
-                        continue;
-                    }
-
-                    Subdomain::create([
-                        'program_id' => $program->id,
-                        'subdomain' => $subdomain,
-                    ]);
-                    $this->info("Valid subdomain found: $subdomain");
                 }
+    
+                // Clean up temp files
+                unlink($assetFinderFilePath);
+    
+                $this->info('Completed recon for program ' . $program->name . '.');
+                $bar->advance();
             }
-
-            // Clean up temp files
-            unlink($assetFinderFilePath);
-
-            $this->info('Completed recon for program ' . $program->name . '.');
-            $bar->advance();
         }
         $this->info('Recon completed.');
         $bar->finish();
