@@ -17,7 +17,8 @@ class InitProgram extends Command
      */
     protected $signature = 'program:init 
                             {name : The name of the program.} 
-                            {wildcards : List of wildcards separated by commas (ej. *.example.com,*.test.com)} 
+                            {wildcards : List of wildcards separated by commas (ej. *.example.com,*.test.com)}
+                            {out_of_scope : List of wildcards or terms out of scope separated by commas (ej. *.incamail-dev.com,*.test.com, test)}
                             {description? : Optional description of the program.}';
 
     /**
@@ -34,6 +35,7 @@ class InitProgram extends Command
     {
         $name = trim($this->argument('name'));
         $wildcards = explode(',', $this->argument('wildcards'));
+        $out_of_scope = explode(',', $this->argument('out_of_scope'));
         $description = trim($this->argument('description')) ?? '';
 
         // Validate that the program doesn't exist already.
@@ -58,6 +60,15 @@ class InitProgram extends Command
             ]);
             $this->info("Assigning wildcard {$wildcard}");
         }
+
+         // Create the out_of_scope items
+         foreach($out_of_scope as $out_of_scope_item) {
+            OutOfScope::create([
+                'program_id' => $program->id,
+                'out_of_scope' => trim($out_of_scope_item),
+            ]);
+            $this->info("Assigning out_of_scope {$out_of_scope_item}");
+         }
 
         return Command::SUCCESS;
     }
