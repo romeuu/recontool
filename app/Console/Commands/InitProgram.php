@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\Program;
 use App\Models\Wildcard;
+use App\Models\OutOfScope;
 
 
 use Illuminate\Console\Command;
