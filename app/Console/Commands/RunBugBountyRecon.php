@@ -60,7 +60,7 @@ class RunBugBountyRecon extends Command
     
                 foreach ($validSubdomains as $subdomain) {
                     if (!empty($subdomain)) {
-                        $isOutOfScopeExact = OutOfScope::where('subdomain', $subdomain)->exists();
+                        $isOutOfScopeExact = OutOfScope::where('wildcard', $subdomain)->exists();
     
                         if ($isOutOfScopeExact) {
                             $this->info("The exact subdomain $subdomain is out of scope and will not be saved.");
