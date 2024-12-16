@@ -28,24 +28,23 @@ class RunBugBountyRecon extends Command
      */
     public function handle()
     {
-         // Obtain the list of programs
-         $programs = Program::whereNotNull('wildcard')->get();
+        // Obtain the list of programs
+        $programs = Program::all();
 
-         $bar = $this->output->createProgressBar(count($programs));
-
-         foreach ($programs as $program) {
-            $this->performTask($program);
+        $bar = $this->output->createProgressBar(count($programs));
+        $bar->start();
+        foreach ($programs as $program) {
             $wildcard = $program->wildcard;
 
             $this->info("Starting search for wildcard: $wildcard");
 
             // Execute assetfinder
             $assetFinderOutput = shell_exec("assetfinder --subs-only $wildcard");
- 
-             // Saving in .txt
+
+                // Saving in .txt
             $assetFinderFilePath = storage_path("app/assetfinder_{$wildcard}.txt");
             file_put_contents($assetFinderFilePath, $assetFinderOutput);
- 
+
             
             $this->info("Testing subdomains with httprobe");
 
@@ -82,11 +81,11 @@ class RunBugBountyRecon extends Command
                 }
             }
 
-         // Clean up temp files
-         unlink($assetFinderFilePath);
- 
-         $this->info('Completed recon for program ' . $program->name . '.');
-         $bar->advance();
+            // Clean up temp files
+            unlink($assetFinderFilePath);
+
+            $this->info('Completed recon for program ' . $program->name . '.');
+            $bar->advance();
         }
         $this->info('Recon completed.');
         $bar->finish();
