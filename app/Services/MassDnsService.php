@@ -28,6 +28,7 @@ class MassDnsService
             'massdns',
             '-r', $resolverFilePath,
             '-o', 'J',
+            '-t', 'A',
             $tempInputFile
         ];
 

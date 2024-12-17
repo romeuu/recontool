@@ -98,6 +98,7 @@ class RunBugBountyRecon extends Command
     protected function isValidSubdomain($subdomain, $ip = null)
     {
         if ($ip) {
+            $this->info("The IP address for $subdomain is $ip.");
             if (!filter_var($ip, FILTER_VALIDATE_IP)) {
                 $this->info("The IP address for $subdomain could not be resolved.");
                 return false;
