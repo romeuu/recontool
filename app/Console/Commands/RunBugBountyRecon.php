@@ -94,15 +94,14 @@ class RunBugBountyRecon extends Command
     protected function isValidSubdomain($subdomain, $ip = null)
     {
         if ($ip) {
-            $ipAddress = gethostbyname($subdomain);
-            if (!filter_var($ipAddress, FILTER_VALIDATE_IP)) {
+            if (!filter_var($ip, FILTER_VALIDATE_IP)) {
                 $this->info("The IP address for $subdomain could not be resolved.");
                 return false;
             }
     
-            $ipBinary = inet_pton($ipAddress);
+            $ipBinary = inet_pton($ip);
             if (!InScopeIp::whereRaw('? BETWEEN ip_start AND ip_end', [$ipBinary])->exists()) {
-                $this->info("The subdomain $subdomain with IP $ipAddress is out of scope.");
+                $this->info("The subdomain $subdomain with IP $ip is out of scope.");
                 return false;
             }
         }
