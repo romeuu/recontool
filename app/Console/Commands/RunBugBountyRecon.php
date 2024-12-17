@@ -8,109 +8,94 @@ use App\Models\Subdomain;
 use App\Models\OutOfScope;
 use App\Models\InScopeIp;
 
-
 class RunBugBountyRecon extends Command
 {
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
     protected $signature = 'recon:bugbounty';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
     protected $description = 'Automates recon in bug bounty programs every hour.';
 
-    /**
-     * Execute the console command.
-     */
     public function handle()
     {
-        // Obtain the list of programs
         $programs = Program::all();
-
         $bar = $this->output->createProgressBar(count($programs));
         $bar->start();
+
         foreach ($programs as $program) {
-            $wildcards = $program->wildcards()->get();
-
-            foreach($wildcards as $wildcard) {
-                $this->info("Starting search for wildcard: $wildcard->wildcard");
-
-                // Execute assetfinder
-                $assetFinderOutput = shell_exec("assetfinder --subs-only $wildcard->wildcard");
-                
-                $this->info($assetFinderOutput);
-                // Saving in .txt
-                $assetFinderFilePath = storage_path("app/assetfinder_{$wildcard->wildcard}.txt");
-                file_put_contents($assetFinderFilePath, $assetFinderOutput);
-    
-                
-                $this->info("Testing subdomains with httprobe");
-    
-                // Execute httprobe to check subdomains
-                $httprobeOutput = shell_exec("cat $assetFinderFilePath | httprobe");
-    
-                // Save valid subdomains to the database
-                $validSubdomains = explode("\n", $httprobeOutput);
-    
-                $this->info("Found " . count($validSubdomains) . " valid subdomains.");
-    
-                foreach ($validSubdomains as $subdomain) {
-                    if (!empty($subdomain)) {
-                        $ipAddress = gethostbyname($subdomain);
-
-                        if (filter_var($ipAddress, FILTER_VALIDATE_IP)) {
-                            $ipBinary = inet_pton($ipAddress);
-
-                            $isInScope = InScopeIp::whereRaw('? BETWEEN ip_start AND ip_end', [$ipBinary])->exists();
-                            
-                            if (!$isInScope) {
-                                $this->info("The subdomain $subdomain with IP $ipAddress is out of scope.");
-                                continue;
-                            }
-                        } else {
-                            $this->info("The IP address for $subdomain could not be resolved.");
-                            continue;
-                        }
-
-                        $isOutOfScopeExact = OutOfScope::where('wildcard', $subdomain)->exists();
-    
-                        if ($isOutOfScopeExact) {
-                            $this->info("The exact subdomain $subdomain is out of scope and will not be saved.");
-                            continue;
-                        }
-    
-                        // (e.g., *.post.ch)
-                        $wildcardMatch = OutOfScope::where('subdomain', 'like', "%$subdomain%")->exists();
-    
-                        if ($wildcardMatch) {
-                            $this->info("The subdomain $subdomain matches a wildcard out of scope and will not be saved.");
-                            continue;
-                        }
-    
-                        Subdomain::create([
-                            'program_id' => $program->id,
-                            'subdomain' => $subdomain,
-                        ]);
-                        $this->info("Valid subdomain found: $subdomain");
-                        
-                    }
-                }
-    
-                // Clean up temp files
-                unlink($assetFinderFilePath);
-    
-                $this->info('Completed recon for program ' . $program->name . '.');
-                $bar->advance();
-            }
+            $this->processProgram($program);
+            $bar->advance();
         }
+
         $this->info('Recon completed.');
         $bar->finish();
         return Command::SUCCESS;
     }
+
+    protected function processProgram($program)
+    {
+        $wildcards = $program->wildcards()->get();
+
+        foreach ($wildcards as $wildcard) {
+            $this->info("Starting search for wildcard: {$wildcard->wildcard}");
+            $assetFinderOutput = $this->runAssetFinder($wildcard->wildcard);
+            $validSubdomains = $this->runHttprobe($wildcard->wildcard, $assetFinderOutput);
+            $this->processSubdomains($program, $validSubdomains);
+            $this->info('Completed recon for program ' . $program->name . '.');
+        }
+    }
+
+    protected function runAssetFinder($wildcard)
+    {
+        $output = shell_exec("assetfinder --subs-only $wildcard");
+        $this->info($output);
+
+        $filePath = storage_path("app/assetfinder_{$wildcard}.txt");
+        file_put_contents($filePath, $output);
+        return $filePath;
+    }
+
+    protected function runHttprobe($wildcard, $filePath)
+    {
+        $this->info("Testing subdomains with httprobe");
+        $output = shell_exec("cat $filePath | httprobe");
+        $validSubdomains = explode("\n", $output);
+        $this->info("Found " . count($validSubdomains) . " valid subdomains.");
+        unlink($filePath);
+        return $validSubdomains;
+    }
+
+    protected function processSubdomains($program, $subdomains)
+    {
+        foreach ($subdomains as $subdomain) {
+            if (!empty($subdomain) && $this->isValidSubdomain($subdomain)) {
+                Subdomain::create([
+                    'program_id' => $program->id,
+                    'subdomain' => $subdomain,
+                ]);
+                $this->info("Valid subdomain found: $subdomain");
+            }
+        }
+    }
+
+    protected function isValidSubdomain($subdomain)
+    {
+        $ipAddress = gethostbyname($subdomain);
+        if (!filter_var($ipAddress, FILTER_VALIDATE_IP)) {
+            $this->info("The IP address for $subdomain could not be resolved.");
+            return false;
+        }
+
+        $ipBinary = inet_pton($ipAddress);
+        if (!InScopeIp::whereRaw('? BETWEEN ip_start AND ip_end', [$ipBinary])->exists()) {
+            $this->info("The subdomain $subdomain with IP $ipAddress is out of scope.");
+            return false;
+        }
+
+        if (OutOfScope::where('wildcard', $subdomain)->exists() ||
+            OutOfScope::where('subdomain', 'like', "%$subdomain%")->exists()) {
+            $this->info("The subdomain $subdomain is out of scope and will not be saved.");
+            return false;
+        }
+
+        return true;
+    }
 }
+
