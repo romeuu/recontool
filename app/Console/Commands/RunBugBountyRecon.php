@@ -64,7 +64,7 @@ class RunBugBountyRecon extends Command
     protected function runHttprobe($wildcard, $filePath)
     {
         $this->info("Testing subdomains with httprobe");
-        $output = shell_exec("cat $filePath | httprobe");
+        $output = shell_exec("cat $filePath | httprobe -c 80 --prefer-https");
         $validSubdomains = explode("\n", $output);
         $this->info("Found " . count($validSubdomains) . " valid subdomains.");
         unlink($filePath);
@@ -75,8 +75,12 @@ class RunBugBountyRecon extends Command
     {
         $hasIpsInScope = InScopeIp::where('program_id', $program->id)->exists();
 
+        $cleanedSubdomains = array_map(function ($subdomain) {
+            return preg_replace('~^https?://~', '', $subdomain);
+        }, $subdomains);
+
         $subdomainsToProcess = $hasIpsInScope
-            ? $this->massDnsService->resolveSubdomains($subdomains)
+            ? $this->massDnsService->resolveSubdomains($cleanedSubdomains)
             : $subdomains;
 
         foreach ($subdomainsToProcess as $subdomain => $ip) {
