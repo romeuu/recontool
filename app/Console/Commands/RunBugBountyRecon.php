@@ -6,6 +6,8 @@ use Illuminate\Console\Command;
 use App\Models\Program;
 use App\Models\Subdomain;
 use App\Models\OutOfScope;
+use App\Models\InScopeIp;
+
 
 class RunBugBountyRecon extends Command
 {
@@ -60,6 +62,22 @@ class RunBugBountyRecon extends Command
     
                 foreach ($validSubdomains as $subdomain) {
                     if (!empty($subdomain)) {
+                        $ipAddress = gethostbyname($subdomain);
+
+                        if (filter_var($ipAddress, FILTER_VALIDATE_IP)) {
+                            $ipBinary = inet_pton($ipAddress);
+
+                            $isInScope = InScopeIp::whereRaw('? BETWEEN ip_start AND ip_end', [$ipBinary])->exists();
+                            
+                            if (!$isInScope) {
+                                $this->info("The subdomain $subdomain with IP $ipAddress is out of scope.");
+                                continue;
+                            }
+                        } else {
+                            $this->info("The IP address for $subdomain could not be resolved.");
+                            continue;
+                        }
+
                         $isOutOfScopeExact = OutOfScope::where('wildcard', $subdomain)->exists();
     
                         if ($isOutOfScopeExact) {
@@ -80,6 +98,7 @@ class RunBugBountyRecon extends Command
                             'subdomain' => $subdomain,
                         ]);
                         $this->info("Valid subdomain found: $subdomain");
+                        
                     }
                 }
     
