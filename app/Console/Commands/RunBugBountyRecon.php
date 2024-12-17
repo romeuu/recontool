@@ -8,10 +8,19 @@ use App\Models\Subdomain;
 use App\Models\OutOfScope;
 use App\Models\InScopeIp;
 
+use App\Services\MassDnsService;
+
 class RunBugBountyRecon extends Command
 {
     protected $signature = 'recon:bugbounty';
     protected $description = 'Automates recon in bug bounty programs every hour.';
+    protected $massDnsService;
+
+    public function __construct(MassDnsService $massDnsService)
+    {
+        parent::__construct();
+        $this->massDnsService = $massDnsService;
+    }
 
     public function handle()
     {
@@ -64,8 +73,14 @@ class RunBugBountyRecon extends Command
 
     protected function processSubdomains($program, $subdomains)
     {
-        foreach ($subdomains as $subdomain) {
-            if (!empty($subdomain) && $this->isValidSubdomain($subdomain)) {
+        $hasIpsInScope = InScopeIp::where('program_id', $program->id)->exists();
+
+        $subdomainsToProcess = $hasIpsInScope
+            ? $this->massDnsService->resolveSubdomains($subdomains)
+            : $subdomains;
+
+        foreach ($subdomainsToProcess as $subdomain => $ip) {
+            if (!empty($subdomain) && $this->isValidSubdomain($subdomain, $ip ?? null)) {
                 Subdomain::create([
                     'program_id' => $program->id,
                     'subdomain' => $subdomain,
@@ -73,20 +88,23 @@ class RunBugBountyRecon extends Command
                 $this->info("Valid subdomain found: $subdomain");
             }
         }
+        
     }
 
-    protected function isValidSubdomain($subdomain)
+    protected function isValidSubdomain($subdomain, $ip = null)
     {
-        $ipAddress = gethostbyname($subdomain);
-        if (!filter_var($ipAddress, FILTER_VALIDATE_IP)) {
-            $this->info("The IP address for $subdomain could not be resolved.");
-            return false;
-        }
-
-        $ipBinary = inet_pton($ipAddress);
-        if (!InScopeIp::whereRaw('? BETWEEN ip_start AND ip_end', [$ipBinary])->exists()) {
-            $this->info("The subdomain $subdomain with IP $ipAddress is out of scope.");
-            return false;
+        if ($ip) {
+            $ipAddress = gethostbyname($subdomain);
+            if (!filter_var($ipAddress, FILTER_VALIDATE_IP)) {
+                $this->info("The IP address for $subdomain could not be resolved.");
+                return false;
+            }
+    
+            $ipBinary = inet_pton($ipAddress);
+            if (!InScopeIp::whereRaw('? BETWEEN ip_start AND ip_end', [$ipBinary])->exists()) {
+                $this->info("The subdomain $subdomain with IP $ipAddress is out of scope.");
+                return false;
+            }
         }
 
         if (OutOfScope::where('wildcard', $subdomain)->exists() ||
