@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\Program;
 use App\Models\Wildcard;
 use App\Models\OutOfScope;
+use App\Models\InScopeIp;
 
 
 use Illuminate\Console\Command;
