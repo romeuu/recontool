@@ -15,13 +15,18 @@ class MassDnsService
     public function resolveSubdomains(array $subdomains): array
     {
         // Create a temporary file with the subdomains
-        $tempInputFile = tempnam(sys_get_temp_dir(), 'massdns_input_');
+        $storagePath = storage_path('app/private');
+
+        $tempInputFile = $storagePath . '/massdns_input_' . uniqid();
+
         file_put_contents($tempInputFile, implode("\n", $subdomains));
+
+        $resolverFilePath = storage_path('app/private/resolvers.txt');
 
         // MassDNS command (using 8.8.8.8 as public DNS resolver)
         $command = [
             'massdns',
-            '-r', '8.8.8.8',
+            '-r', $resolverFilePath,
             '-o', 'J',
             $tempInputFile
         ];
