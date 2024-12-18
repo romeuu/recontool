@@ -83,8 +83,8 @@ class InitProgram extends Command
             for ($i = 0; $i < count($in_scope_ips); $i+=2) {
                 InScopeIp::create([
                     'program_id' => $program->id,
-                    'ip_start' => inet_pton($in_scope_ips[$i]),
-                    'ip_end' => inet_pton($in_scope_ips[$i+1]),
+                    'ip_start' => $in_scope_ips[$i],
+                    'ip_end' => $in_scope_ips[$i+1],
                 ]);
                 $this->info("Assigning in_scope_ip range {$in_scope_ips[$i]} to {$in_scope_ips[$i+1]}");
             }
