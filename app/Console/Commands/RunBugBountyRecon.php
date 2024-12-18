@@ -45,8 +45,6 @@ class RunBugBountyRecon extends Command
 
     protected function processProgram($program)
     {
-        $wildcards = $program->wildcards()->get();
-
         try {
 
             $pathFolder = escapeshellarg(storage_path('app/private/'.$program->name));
@@ -68,7 +66,16 @@ class RunBugBountyRecon extends Command
 
                 $validSubdomains = $this->subdomainFilterService->filterValidSubdomainsIP($program);
 
-                $this->info(print_r($validSubdomains, true));
+                $validSubdomainsPath = storage_path('app/private/'.$program->name.'/valid-subdomains.txt');
+                file_put_contents($validSubdomainsPath, $validSubdomains, FILE_USE_INCLUDE_PATH);
+
+                foreach($validSubdomains as $subdomain) {
+                    Subdomain::create([
+                        'program_id' => $program->id,
+                        'subdomain' => $subdomain,
+                        'active' => true
+                    ]);
+                }
             }
 
 
