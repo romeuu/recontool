@@ -11,7 +11,7 @@ use Symfony\Component\Process\Process;
 
 use App\Services\MassDnsService;
 use Exception;
-use SubdomainFilterService;
+use App\Services\SubdomainFilterService;
 
 class RunBugBountyRecon extends Command
 {
