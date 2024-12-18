@@ -27,7 +27,7 @@ class MassDnsService
         $command = [
             'massdns',
             '-r', $resolverFilePath,
-            '-o', 'J',
+            '-o', 'S',
             '-t', 'A',
             $tempInputFile
         ];
@@ -53,23 +53,19 @@ class MassDnsService
      */
     protected function parseOutput(string $output): array
     {
+        $subdomainIps = [];
         $lines = explode("\n", $output);
-        $results = [];
 
         foreach ($lines as $line) {
-            if (empty($line)) {
-                continue;
-            }
-
-            $decoded = json_decode($line, true);
-            if (isset($decoded['name'], $decoded['data'])) {
-                $subdomain = $decoded['name'];
-                $ip = $decoded['data'];
-                $results[$subdomain] = $ip;
+            // Solo procesar líneas que contienen registros A (IPv4) o AAAA (IPv6)
+            if (preg_match('/(\S+)\s+\S+\s+\S+\s+(\S+)/', $line, $matches)) {
+                $subdomainIps[] = [
+                    'subdomain' => $matches[1],
+                    'ip' => $matches[2]
+                ];
             }
         }
 
-        return $results;
+        return $subdomainIps;
     }
 }
-
