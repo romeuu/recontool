@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\File;
 use Symfony\Component\Process\Process;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 use App\Models\OutOfScope;
+use App\Models\InScopeIp;
 
 class SubdomainFilterService
 {
@@ -62,12 +63,13 @@ class SubdomainFilterService
         $ipLong = ip2long($ip);
         
         // Get the IP ranges from the database (InScopeIps)
-        $ipsInScope = DB::table('InScopeIps')->get(['ip_start', 'ip_end'])->where('program_id', $program->id);
+        $ipsInScope = InScopeIp::where('program_id', $program->id)->get(['ip_start', 'ip_end']);
 
         foreach ($ipsInScope as $range) {
             // Compare the IP with the ranges (ip_start and ip_end are stored in binary)
+            echo $range->ip_start;
             if ($ipLong >= $range->ip_start && $ipLong <= $range->ip_end) {
-                return true; // The IP is within the range
+                return true;
             }
         }
 
