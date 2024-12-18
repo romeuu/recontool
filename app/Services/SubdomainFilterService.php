@@ -12,7 +12,7 @@ class SubdomainFilterService
     public function filterValidSubdomainsIP($program)
     {
         // Read the file with the IPs and subdomains
-        $filePath = storage_path('app/private/'.$program->name.'amass-results.txt');  // File path
+        $filePath = storage_path('app/private/'.$program->name.'/amass-results.txt');  // File path
         $lines = file($filePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
 
         // Dictionary to store subdomains and IPs
