@@ -59,16 +59,12 @@ class SubdomainFilterService
     // Function to check if an IP is within the range in the database
     private function isIpInScope($ip, $program)
     {
-        // Convert the subdomain IP to binary format
-        $ipLong = ip2long($ip);
-        
         // Get the IP ranges from the database (InScopeIps)
         $ipsInScope = InScopeIp::where('program_id', $program->id)->get(['ip_start', 'ip_end']);
 
         foreach ($ipsInScope as $range) {
             // Compare the IP with the ranges (ip_start and ip_end are stored in binary)
-            echo $range->ip_start;
-            if ($ipLong >= $range->ip_start && $ipLong <= $range->ip_end) {
+            if ($ip >= $range->ip_start && $ip <= $range->ip_end) {
                 return true;
             }
         }
