@@ -73,7 +73,7 @@ class SubdomainFilterService
     }
 
     public function filterValidSubdomains($program) {
-        $filePath = storage_path('app/private/'.$program->name.'resultados');  // File path
+        $filePath = storage_path('app/private/'.$program->name.'/unfiltered-subdomains.txt');
         $subdomains = file($filePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
 
         $itemsOutOfScope = OutOfScope::where('program_id', $program->id)->get();
