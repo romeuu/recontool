@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Host;
 use Illuminate\Console\Command;
 use App\Models\Program;
 use App\Models\Subdomain;
@@ -89,6 +90,18 @@ class RunBugBountyRecon extends Command
                         'active' => true
                     ]);
                 }
+            }
+
+            $hosts = $this->runHttprobe($validSubdomainsPath, storage_path('app/private/'.$program->name.'/hosts.txt'));
+
+            foreach ($hosts as $host) {
+                $subdomain = $this->findSubdomainForHost($host, $validSubdomains);
+                Host::create([
+                    'program_id' => $program->id,
+                    'url' => $host,
+                    'is_alive' => true,
+                    'subdomain' => $subdomain->id ?? null
+                ]);
             }
         } catch (\Exception $e) {
             $this->error('Error during recon process: ' . $e->getMessage());
@@ -182,5 +195,34 @@ class RunBugBountyRecon extends Command
             // Manejo de errores si el proceso falla
             echo "Error while running Amass: " . $exception->getMessage();
         }
+    }
+
+    private function runHttprobe($subdomainsFilePath, $hostsFilePath) {
+        $this->info("Starting recon process with httprobe...");
+
+        $command = "cat {$subdomainsFilePath} | httprobe -c 80 --prefer-https | anew {$hostsFilePath}";
+        $process = Process::fromShellCommandline($command);
+        $process->run();
+
+        if (!$process->isSuccessful()) {
+            throw new \RuntimeException("Error executing httprobe and anew: " . $process->getErrorOutput());
+        }
+
+        $hosts = file($hostsFilePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+
+        $this->info('Httprobe finished successfully, ' . count($hosts) . ' hosts were found.');
+
+        return $hosts;
+    }
+
+    public function findSubdomainForHost($host, $validSubdomains)
+    {
+        foreach ($validSubdomains as $subdomain) {
+            if (strpos($host, $subdomain) !== false) {
+                return Subdomain::where('subdomain', $subdomain)->first();
+            }
+        }
+
+        return null;
     }
 }
