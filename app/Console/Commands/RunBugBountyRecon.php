@@ -76,9 +76,20 @@ class RunBugBountyRecon extends Command
                         'active' => true
                     ]);
                 }
+            } else {
+                $validSubdomains = $this->subdomainFilterService->filterValidSubdomains($program);
+
+                $validSubdomainsPath = storage_path('app/private/'.$program->name.'/valid-subdomains.txt');
+                file_put_contents($validSubdomainsPath, $validSubdomains, FILE_USE_INCLUDE_PATH);
+
+                foreach($validSubdomains as $subdomain) {
+                    Subdomain::create([
+                        'program_id' => $program->id,
+                        'subdomain' => $subdomain,
+                        'active' => true
+                    ]);
+                }
             }
-
-
         } catch (\Exception $e) {
             $this->error('Error during recon process: ' . $e->getMessage());
         }

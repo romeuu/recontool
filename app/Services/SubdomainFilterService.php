@@ -72,7 +72,7 @@ class SubdomainFilterService
         return false; // The IP is not within the range of any entry in the database
     }
 
-    private function filterValidSubdomains($program) {
+    public function filterValidSubdomains($program) {
         $filePath = storage_path('app/private/'.$program->name.'resultados');  // File path
         $subdomains = file($filePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
 
