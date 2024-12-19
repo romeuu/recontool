@@ -67,9 +67,6 @@ class RunBugBountyRecon extends Command
 
                 $validSubdomains = $this->subdomainFilterService->filterValidSubdomainsIP($program);
 
-                $validSubdomainsPath = storage_path('app/private/'.$program->name.'/valid-subdomains.txt');
-                file_put_contents($validSubdomainsPath, $validSubdomains, FILE_USE_INCLUDE_PATH);
-
                 foreach($validSubdomains as $subdomain) {
                     Subdomain::create([
                         'program_id' => $program->id,
@@ -79,10 +76,7 @@ class RunBugBountyRecon extends Command
                 }
             } else {
                 $validSubdomains = $this->subdomainFilterService->filterValidSubdomains($program);
-
-                $validSubdomainsPath = storage_path('app/private/'.$program->name.'/valid-subdomains.txt');
-                file_put_contents($validSubdomainsPath, $validSubdomains, FILE_USE_INCLUDE_PATH);
-
+                
                 foreach($validSubdomains as $subdomain) {
                     Subdomain::create([
                         'program_id' => $program->id,
@@ -92,6 +86,7 @@ class RunBugBountyRecon extends Command
                 }
             }
 
+            $validSubdomainsPath = storage_path('app/private/'.$program->name.'/valid-subdomains.txt');
             $hosts = $this->runHttprobe($validSubdomainsPath, storage_path('app/private/'.$program->name.'/hosts.txt'));
 
             foreach ($hosts as $host) {
