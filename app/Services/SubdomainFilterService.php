@@ -51,8 +51,6 @@ class SubdomainFilterService
         $outputFile = storage_path('app/private/'.$program->name.'/valid-subdomains.txt');
         File::put($outputFile, implode("\n", $validSubdomains));
 
-        echo "Found " . count($validSubdomains) . " subdomains within the allowed range.";
-
         return $validSubdomains;
     }
 
@@ -89,8 +87,6 @@ class SubdomainFilterService
         // Save the valid subdomains to a new file
         $outputFile = storage_path('app/private/'.$program->name.'/valid-subdomains.txt');
         File::put($outputFile, implode("\n", $subdomains));
-
-        echo "Found " . count($subdomains) . " subdomains within the allowed range.";
 
         return $subdomains;
     }

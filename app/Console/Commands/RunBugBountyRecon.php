@@ -67,6 +67,8 @@ class RunBugBountyRecon extends Command
 
                 $validSubdomains = $this->subdomainFilterService->filterValidSubdomainsIP($program);
 
+                $this->info("Found " . count($validSubdomains) . " subdomains within the allowed range.");
+
                 foreach($validSubdomains as $subdomain) {
                     Subdomain::firstOrCreate(
                         [
@@ -81,6 +83,8 @@ class RunBugBountyRecon extends Command
             } else {
                 $validSubdomains = $this->subdomainFilterService->filterValidSubdomains($program);
 
+                $this->info("Found " . count($validSubdomains) . " subdomains within the allowed range.");
+                
                 foreach($validSubdomains as $subdomain) {
                     Subdomain::firstOrCreate(
                         [
