@@ -200,12 +200,26 @@ class RunBugBountyRecon extends Command
     private function runHttprobe($subdomainsFilePath, $hostsFilePath) {
         $this->info("Starting recon process with httprobe...");
 
-        $command = "cat {$subdomainsFilePath} | httprobe -c 80 --prefer-https | anew {$hostsFilePath}";
+        $command = "cat {$subdomainsFilePath} | httprobe -c 80 --prefer-https";
         $process = Process::fromShellCommandline($command);
+        $process->setTimeout(600);
         $process->run();
 
         if (!$process->isSuccessful()) {
             throw new \RuntimeException("Error executing httprobe and anew: " . $process->getErrorOutput());
+        }
+
+        file_put_contents($hostsFilePath, $process->getOutput(), FILE_USE_INCLUDE_PATH);
+
+        $anew = new Process(['anew', $hostsFilePath]);
+
+        $anew->setInput(file_get_contents($hostsFilePath));
+        $anew->setTimeout(600);
+
+        $anew->run();
+
+        if (!$anew->isSuccessful()) {
+            throw new \Exception('Anew failed: ' . $anew->getErrorOutput());
         }
 
         $hosts = file($hostsFilePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
