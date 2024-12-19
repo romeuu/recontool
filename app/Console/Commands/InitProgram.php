@@ -38,8 +38,8 @@ class InitProgram extends Command
     {
         $name = trim($this->argument('name'));
         $wildcards = explode(',', $this->argument('wildcards'));
-        $out_of_scope = explode(',', $this->argument('out_of_scope'));
-        $description = trim($this->argument('description')) ?? '';
+        $out_of_scope = explode(',', $this->option('out_of_scope'));
+        $description = trim($this->option('description')) ?? '';
 
         // Validate that the program doesn't exist already.
         if (Program::where('name', $name)->exists()) {
@@ -74,8 +74,8 @@ class InitProgram extends Command
          }
 
         // Create the in_scope_ips
-        if ($this->argument('in_scope_ips')) {
-            $in_scope_ips = explode(',', $this->argument('in_scope_ips'));
+        if ($this->option('in_scope_ips')) {
+            $in_scope_ips = explode(',', $this->option('in_scope_ips'));
             if (count($in_scope_ips) % 2 != 0) {
                 $this->error('The list of in_scope_ips has to be a list of ranges of IPs, for example: 192.168.1.1, 192.168.255.255');
                 return Command::FAILURE;
