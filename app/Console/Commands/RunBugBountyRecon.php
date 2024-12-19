@@ -68,21 +68,29 @@ class RunBugBountyRecon extends Command
                 $validSubdomains = $this->subdomainFilterService->filterValidSubdomainsIP($program);
 
                 foreach($validSubdomains as $subdomain) {
-                    Subdomain::create([
-                        'program_id' => $program->id,
-                        'subdomain' => $subdomain,
-                        'active' => true
-                    ]);
+                    Subdomain::firstOrCreate(
+                        [
+                            'program_id' => $program->id,
+                            'subdomain' => $subdomain
+                        ],
+                        [
+                            'active' => true
+                        ]
+                    );
                 }
             } else {
                 $validSubdomains = $this->subdomainFilterService->filterValidSubdomains($program);
 
                 foreach($validSubdomains as $subdomain) {
-                    Subdomain::create([
-                        'program_id' => $program->id,
-                        'subdomain' => $subdomain,
-                        'active' => true
-                    ]);
+                    Subdomain::firstOrCreate(
+                        [
+                            'program_id' => $program->id,
+                            'subdomain' => $subdomain
+                        ],
+                        [
+                            'active' => true
+                        ]
+                    );
                 }
             }
 
@@ -91,12 +99,16 @@ class RunBugBountyRecon extends Command
 
             foreach ($hosts as $host) {
                 $subdomain = $this->findSubdomainForHost($host, $validSubdomains);
-                Host::create([
-                    'program_id' => $program->id,
-                    'url' => $host,
-                    'is_alive' => true,
-                    'subdomain' => $subdomain->id ?? null
-                ]);
+                Host::firstOrCreate(
+                    [
+                        'program_id' => $program->id,
+                        'url' => $host,
+                    ],
+                    [
+                        'is_alive' => true,
+                        'subdomain' => $subdomain->id ?? null
+                    ]
+            );
             }
         } catch (\Exception $e) {
             $this->error('Error during recon process: ' . $e->getMessage());
