@@ -3,6 +3,7 @@ namespace App\Services;
 
 use Telegram\Bot\Api;
 use Telegram\Bot\Objects\Update;
+use Illuminate\Support\Facades\Http;
 
 class TelegramBotService
 {
@@ -48,6 +49,17 @@ class TelegramBotService
         foreach ($chatIds as $chatId) {
             $this->sendMessage($chatId, $message);
         }
+    }
+
+    public function sendFileToUser($filePath)
+    {
+        $telegramApi = 'https://api.telegram.org/bot'.env('TELEGRAM_BOT_TOKEN').'/sendDocument';
+        $data = [
+            'chat_id' => env('TELEGRAM_CHAT_ID'),
+            'document' => fopen($filePath, 'r'),
+        ];
+
+        Http::post($telegramApi, $data);
     }
 }
 ?>

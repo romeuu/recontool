@@ -42,12 +42,16 @@ class MonitorSubdomains extends Command
             $subdomains = Subdomain::where('program_id', $program->id)->get();
             $newSubdomains = $this->getNewSubdomains($program, $subdomains);
 
+            $filePath = storage_path('app/private/'.$program->name.'/subdomains-telegram.txt');
+            file_put_contents($filePath, $newSubdomains->pluck('subdomain')->implode("\n"), FILE_USE_INCLUDE_PATH);
+
             if ($newSubdomains->isNotEmpty()) {
                 $message = "New subdomains found for program {$program->name}: \n";
                 foreach ($newSubdomains as $subdomain) {
                     $message .= $subdomain->subdomain . "\n";
                 }
                 $this->telegramService->sendMessage(getenv('TELEGRAM_CHAT_ID'), $message);
+                $this->telegramService->sendFileToUser($filePath);
             }
         }
 
@@ -58,6 +62,6 @@ class MonitorSubdomains extends Command
     {
         return $subdomains->filter(function ($subdomain) {
             return $subdomain->created_at->gt(now()->subHours(2));
-        });
+        })->take(10);
     }
 }
