@@ -76,7 +76,7 @@ class RunBugBountyRecon extends Command
                 }
             } else {
                 $validSubdomains = $this->subdomainFilterService->filterValidSubdomains($program);
-                
+
                 foreach($validSubdomains as $subdomain) {
                     Subdomain::create([
                         'program_id' => $program->id,
@@ -194,7 +194,8 @@ class RunBugBountyRecon extends Command
 
     private function runHttprobe($subdomainsFilePath, $hostsFilePath) {
         $this->info("Starting recon process with httprobe...");
-
+    
+        $subdomainsFilePath = escapeshellarg($subdomainsFilePath);
         $command = "cat {$subdomainsFilePath} | httprobe -c 80 --prefer-https";
         $process = Process::fromShellCommandline($command);
         $process->setTimeout(600);
