@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Telegram\Bot\Laravel\Facades\Telegram;
+use App\Telegram\Commands\HostsCommand;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -19,6 +21,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        Telegram::addCommands([
+            HostsCommand::class,
+        ]);
     }
 }
