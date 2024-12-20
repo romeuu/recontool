@@ -9,19 +9,10 @@ use App\Models\Host;
 
 class HostsCommand extends Command
 {
-    /**
-     * Nombre del comando.
-     */
-    protected $name = 'hosts';
+    protected string $name = 'hosts';
+    protected array $aliases = ['host'];
+    protected string $description = 'Retrieve the hosts of a program';
 
-    /**
-     * Descripción del comando.
-     */
-    protected $description = 'Get the hosts of a program';
-
-    /**
-     * Manejar la ejecución del comando.
-     */
     public function handle()
     {
         // Obtén los argumentos enviados con el comando
