@@ -44,7 +44,7 @@ class RunBugBountyRecon extends Command
 
         $this->info('Recon completed.');
         $bar->finish();
-        unlink(storage_path('app/recon.lock'));
+        unlink(storage_path('app/private/recon.lock'));
         return Command::SUCCESS;
     }
 
