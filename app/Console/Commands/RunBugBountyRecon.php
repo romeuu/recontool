@@ -30,6 +30,9 @@ class RunBugBountyRecon extends Command
 
     public function handle()
     {
+        // Lock file
+        file_put_contents(storage_path('app/private/recon.lock'), 'locked', FILE_USE_INCLUDE_PATH);
+
         $programs = Program::all();
         $bar = $this->output->createProgressBar(count($programs));
         $bar->start();
@@ -41,6 +44,7 @@ class RunBugBountyRecon extends Command
 
         $this->info('Recon completed.');
         $bar->finish();
+        unlink(storage_path('app/recon.lock'));
         return Command::SUCCESS;
     }
 

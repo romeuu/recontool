@@ -37,30 +37,41 @@ class MonitorSubdomains extends Command
      */
     public function handle()
     {
-        Log::info('El comando ' . $this->signature . ' se ejecutó correctamente.');
-
-        $programs = Program::all();
-
-        foreach ($programs as $program) {
-            $subdomains = Subdomain::where('program_id', $program->id)->get();
-            $newSubdomains = $this->getNewSubdomains($program, $subdomains);
-
-            $filePath = storage_path('app/private/'.$program->name.'/subdomains-telegram.txt');
-            file_put_contents($filePath, $newSubdomains->pluck('subdomain')->implode("\n"), FILE_USE_INCLUDE_PATH);
-
-            if ($newSubdomains->isNotEmpty()) {
-                $message = "New subdomains found for program {$program->name}: \n";
-                foreach ($newSubdomains as $subdomain) {
-                    $message .= $subdomain->subdomain . "\n";
-                }
-                $this->telegramService->sendMessage(getenv('TELEGRAM_CHAT_ID'), $message);
-                //$this->telegramService->sendFileToUser(getenv('TELEGRAM_CHAT_ID'), $filePath);
-            } else {
-                $this->telegramService->sendMessage(getenv('TELEGRAM_CHAT_ID'), "No new subdomains found for {$program->name}.");
+        try{
+            while (file_exists(storage_path('app/private/recon.lock'))) {
+                $this->info('Recon is still being executed. Waiting 5 minutes...');
+            
+                sleep(300);
             }
-        }
+            $programs = Program::all();
 
-        $this->info('Subdomain monitoring completed.');
+            foreach ($programs as $program) {
+                $subdomains = Subdomain::where('program_id', $program->id)->get();
+                $newSubdomains = $this->getNewSubdomains($program, $subdomains);
+
+                $filePath = storage_path('app/private/'.$program->name.'/subdomains-telegram.txt');
+                file_put_contents($filePath, $newSubdomains->pluck('subdomain')->implode("\n"), FILE_USE_INCLUDE_PATH);
+
+                if ($newSubdomains->isNotEmpty()) {
+                    $message = "New subdomains found for program {$program->name}: \n";
+                    foreach ($newSubdomains as $subdomain) {
+                        $message .= $subdomain->subdomain . "\n";
+                    }
+                    $this->telegramService->sendMessage(getenv('TELEGRAM_CHAT_ID'), $message);
+                    //$this->telegramService->sendFileToUser(getenv('TELEGRAM_CHAT_ID'), $filePath);
+                } else {
+                    $this->telegramService->sendMessage(getenv('TELEGRAM_CHAT_ID'), "No new subdomains found for {$program->name}.");
+                }
+            }
+
+            Log::info('Subdomain monitoring completed.');
+            $this->info('Subdomain monitoring completed.');
+
+        } catch (\Throwable $e) {
+        Log::error('Error during command execution: ' . $e->getMessage());
+        Log::error('Trace: ' . $e->getTraceAsString());
+        }
+        Log::info('El comando ' . $this->signature . ' se ejecutó correctamente.');
     }
 
     private function getNewSubdomains($program, $subdomains)
