@@ -6,6 +6,7 @@ use Illuminate\Console\Command;
 use App\Services\TelegramBotService;
 use App\Models\Program;
 use App\Models\Subdomain;
+use Illuminate\Support\Facades\Log;
 
 class MonitorSubdomains extends Command
 {
@@ -36,6 +37,8 @@ class MonitorSubdomains extends Command
      */
     public function handle()
     {
+        Log::info('El comando ' . $this->signature . ' se ejecutó correctamente.');
+
         $programs = Program::all();
 
         foreach ($programs as $program) {
@@ -51,7 +54,9 @@ class MonitorSubdomains extends Command
                     $message .= $subdomain->subdomain . "\n";
                 }
                 $this->telegramService->sendMessage(getenv('TELEGRAM_CHAT_ID'), $message);
-                $this->telegramService->sendFileToUser($filePath);
+                //$this->telegramService->sendFileToUser(getenv('TELEGRAM_CHAT_ID'), $filePath);
+            } else {
+                $this->telegramService->sendMessage(getenv('TELEGRAM_CHAT_ID'), "No new subdomains found for {$program->name}.");
             }
         }
 

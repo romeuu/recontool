@@ -56,7 +56,7 @@ class TelegramBotService
         $telegramApi = 'https://api.telegram.org/bot'.env('TELEGRAM_BOT_TOKEN').'/sendDocument';
         $data = [
             'chat_id' => env('TELEGRAM_CHAT_ID'),
-            'document' => fopen($filePath, 'r'),
+            'document' => new \CURLFile($filePath)
         ];
 
         Http::post($telegramApi, $data);
