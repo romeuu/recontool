@@ -1,5 +1,6 @@
 <?php
 
+use App\Console\Commands\MonitorHosts;
 use App\Console\Commands\RunBugBountyRecon;
 use App\Console\Commands\MonitorSubdomains;
 use Illuminate\Foundation\Inspiring;
@@ -13,5 +14,6 @@ Artisan::command('inspire', function () {
 if (env('APP_ENV') === 'PROD') {
     Schedule::command(RunBugBountyRecon::class, [])->everyTwoHours();
 
-    Schedule::command(MonitorSubdomains::class, [])->hourly();
+    //Schedule::command(MonitorSubdomains::class, [])->everyTwoHours();
+    Schedule::command(MonitorHosts::class, [])->everyTwoHours();
 }
