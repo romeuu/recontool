@@ -5,7 +5,6 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use App\Models\Program;
 use App\Models\Host;
-use App\Services\TelegramBotService;
 use Illuminate\Support\Facades\Log;
 
 class MonitorHosts extends Command
@@ -24,12 +23,9 @@ class MonitorHosts extends Command
      */
     protected $description = 'Command description';
 
-    protected $telegramService;
-
-    public function __construct(TelegramBotService $telegramService)
+    public function __construct()
     {
         parent::__construct();
-        $this->telegramService = $telegramService;
     }
 
     /**
@@ -44,6 +40,7 @@ class MonitorHosts extends Command
                 sleep(300);
             }
             $programs = Program::all();
+            $messages = [];
 
             foreach ($programs as $program) {
                 $hosts = Host::where('program_id', $program->id)->get();
@@ -57,9 +54,9 @@ class MonitorHosts extends Command
                     foreach ($newHosts as $host) {
                         $message .= $host->url . "\n";
                     }
-                    return $message;
+                    $messages[$program->name] = $message;
                 } else {
-                    return "No new hosts found for {$program->name}.";
+                    $messages[$program->name] = "No new hosts found for {$program->name}.";
                 }
             }
 
