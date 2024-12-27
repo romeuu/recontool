@@ -57,10 +57,9 @@ class MonitorHosts extends Command
                     foreach ($newHosts as $host) {
                         $message .= $host->url . "\n";
                     }
-                    $this->telegramService->sendMessage(getenv('TELEGRAM_CHAT_ID'), $message);
-                    //$this->telegramService->sendFileToUser(getenv('TELEGRAM_CHAT_ID'), $filePath);
+                    return $message;
                 } else {
-                    $this->telegramService->sendMessage(getenv('TELEGRAM_CHAT_ID'), "No new hosts found for {$program->name}.");
+                    return "No new hosts found for {$program->name}.";
                 }
             }
 
