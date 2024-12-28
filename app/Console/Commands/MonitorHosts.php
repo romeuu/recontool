@@ -57,11 +57,12 @@ class MonitorHosts extends Command
                     $messages[$program->name] = $message;
                 } else {
                     $messages[$program->name] = "No new hosts found for {$program->name}.";
+                    Log::info("No new hosts found for {$program->name}.");
                 }
             }
 
             Log::info('Host monitoring completed.');
-            $this->info('Host monitoring completed.');
+            $this->output->writeln(json_encode($messages));
 
         } catch (\Throwable $e) {
         Log::error('Error during command execution: ' . $e->getMessage());
