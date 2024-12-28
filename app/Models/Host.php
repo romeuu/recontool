@@ -12,6 +12,7 @@ class Host extends Model
         'subdomain',
         'is_alive',
         'notes',
+        'scanned_dir_at'
     ];
 
     public function program()
