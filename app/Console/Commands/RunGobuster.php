@@ -37,7 +37,7 @@ class RunGobuster extends Command
                 $outputFile = storage_path("app/public/gobuster_results/{$host->url}.txt");
 
                 // Ejecuta Gobuster
-                $command = "gobuster dir -u {$host->url} -w $wordlistPath -o $outputFile -q";
+                $command = "gobuster dir -u {$host->url} -w $wordlistPath -s 200 -o $outputFile -q";
                 shell_exec($command);
 
                 // Procesa los resultados de Gobuster
@@ -62,5 +62,14 @@ class RunGobuster extends Command
         }
 
         $this->info('Gobuster scan completed for all programs.');
+    }
+
+    private function extractPathFromGobusterOutput($line)
+    {
+        if (preg_match('/^\/[^\s]+/', $line, $matches)) {
+            return $matches[0];
+        }
+
+        return null;
     }
 }
