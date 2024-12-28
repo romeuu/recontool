@@ -6,6 +6,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Program;
 use App\Models\Directory;
+use Illuminate\Support\Facades\Log;
 
 class RunGobuster extends Command
 {
@@ -32,6 +33,7 @@ class RunGobuster extends Command
 
             foreach ($hosts as $host) {
                 $this->info("Scanning host: {$host->url}");
+                Log::info("Scanning host: {$host->url}");
 
                 $wordlistPath = storage_path('app/wordlists/default.txt');
                 $outputFile = storage_path("app/public/gobuster_results/{$host->url}.txt");
@@ -46,6 +48,7 @@ class RunGobuster extends Command
 
                     foreach ($results as $line) {
                         $path = $this->extractPathFromGobusterOutput($line);
+                        Log::info("Result found: {$path} for host: {$host->url}");
 
                         if ($path) {
                             Directory::create([
