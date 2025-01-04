@@ -24,7 +24,7 @@ class RunGobuster extends Command
             $this->info("Processing program: {$program->name}");
 
             // Filtra los hosts no escaneados
-            $hosts = $program->hosts()->whereNull('scanned_at')->get();
+            $hosts = $program->hosts()->whereNull('scanned_dir_at')->get();
 
             if ($hosts->isEmpty()) {
                 $this->info("No unscanned hosts found for program {$program->name}");
