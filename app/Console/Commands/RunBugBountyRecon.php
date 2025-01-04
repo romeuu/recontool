@@ -299,7 +299,7 @@ class RunBugBountyRecon extends Command
     }
 
     private function uniteSubdomainFiles($program) {
-        $outputDir = storage_path('app/private/'.$program->name.'/');
+        $outputDir = escapeshellarg(storage_path('app/private/'.$program->name));
         $outputFile = "{$outputDir}/all_subs.txt";
 
         $command = [
