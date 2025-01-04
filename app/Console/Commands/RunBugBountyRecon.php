@@ -206,10 +206,10 @@ class RunBugBountyRecon extends Command
         $subfinder->run();
 
         if (!$subfinder->isSuccessful()) {
-            throw new \Exception('Assetfinder failed: ' . $subfinder->getErrorOutput());
+            throw new \Exception('Subfinder failed: ' . $subfinder->getErrorOutput());
         }
 
-        $this->info('Assetfinder finished successfully.');
+        $this->info('Subfinder finished successfully.');
     }
 
     private function runAmass($subdomainsFilePath, $resultsAmassFilePath, $resolversFilePath) {
