@@ -258,7 +258,7 @@ class RunBugBountyRecon extends Command
         $this->info("Starting recon process with httprobe...");
     
         $subdomainsFilePath = escapeshellarg($subdomainsFilePath);
-        $command = "cat {$subdomainsFilePath} | httprobe -c 80 -p http:80 -p https:443 -p http:8080 -p https:8443 -p https:8080 -p http:8443 --prefer-https";
+        $command = "cat {$subdomainsFilePath} | httprobe -c 200 -p http:80 -p https:443 -p http:8080 -p https:8443 -p https:8080 -p http:8443 --prefer-https";
         $process = Process::fromShellCommandline($command);
         $process->setTimeout(600);
         $process->run();
