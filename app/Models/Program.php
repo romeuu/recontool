@@ -23,4 +23,8 @@ class Program extends Model
     public function wildcards() {
         return $this->hasMany(Wildcard::class);
     }
+
+    public function hosts() {
+        return $this->hasMany(Host::class);
+    }
 }
