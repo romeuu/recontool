@@ -67,11 +67,11 @@ class SubdomainFilterService
             }
         }
 
-        return false; // The IP is not within the range of any entry in the database
+        return false;
     }
 
-    public function filterValidSubdomains($program) {
-        $filePath = storage_path('app/private/'.$program->name.'/domains.txt');
+    public function filterValidSubdomains($program) {        
+        $filePath = storage_path('app/private/'.$program->name.'/all_subs.txt');
         $subdomains = file($filePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
 
         $itemsOutOfScope = OutOfScope::where('program_id', $program->id)->get();
