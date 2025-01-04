@@ -63,7 +63,7 @@ class RunBugBountyRecon extends Command
             $this->runAssetFinder($wildcardsFile, $domainsFile);
 
             $domainsFileSubfinder = storage_path('app/private/'.$program->name.'/domains_subfinder.txt');
-            $this->runSubfinder($wildcardsFile, $domainsFileSubfinder);
+            $this->runSubfinder($wildcardsFileFormatted, $domainsFileSubfinder);
 
             $this->uniteSubdomainFiles($program);
 
