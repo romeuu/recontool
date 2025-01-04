@@ -56,7 +56,8 @@ class RunBugBountyRecon extends Command
             shell_exec("mkdir $pathFolder");
 
             $wildcardsFile = storage_path('app/private/'.$program->name.'/wildcards.txt');
-            $this->exportWildcardsToFile($wildcardsFile, $program);
+            $wildcardsFileFormatted = storage_path('app/private/'.$program->name.'/wildcards-formatted.txt');
+            $this->exportWildcardsToFile($wildcardsFile, $wildcardsFileFormatted, $program);
 
             $domainsFile = storage_path('app/private/'.$program->name.'/domains_assetfinder.txt');
             $this->runAssetFinder($wildcardsFile, $domainsFile);
@@ -130,20 +131,26 @@ class RunBugBountyRecon extends Command
         }
     }
 
-    private function exportWildcardsToFile(string $filePath, $program) {
+    private function exportWildcardsToFile(string $filePath, string $filePathWithoutDots, $program) {
         $wildcards = $program->wildcards()->get();
 
         $wildcardsList = $wildcards->pluck('wildcard')->toArray();
+        $wildcardsWithoutDots = $wildcards->pluck('wildcard')
+                                      ->map(fn($wildcard) => ltrim($wildcard, '.'))
+                                      ->toArray();
 
         $wildcardsString = implode("\n", $wildcardsList);
+        $wildcardsWithoutDotsString = implode("\n", $wildcardsWithoutDots);
 
         file_put_contents($filePath, $wildcardsString, FILE_USE_INCLUDE_PATH);
+        file_put_contents($filePathWithoutDots, $wildcardsWithoutDotsString, FILE_USE_INCLUDE_PATH);
 
-        if (!file_exists($filePath) || filesize($filePath) === 0) {
+        if ((!file_exists($filePath) || filesize($filePath) === 0) || (!file_exists($filePathWithoutDots) || filesize($filePathWithoutDots) === 0)) {
             throw new \Exception('No wildcards found to export.');
         }
 
         $this->info('Wildcards exported to ' . $filePath);
+        $this->info('Formatted wildcards exported to ' . $filePathWithoutDots);
     }
 
     private function runAssetFinder($wildcardsFile, $domainsFile) {
