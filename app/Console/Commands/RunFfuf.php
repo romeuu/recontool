@@ -43,16 +43,26 @@ class RunFfuf extends Command
 
                 // Procesa los resultados de Ffuf
                 if (file_exists($outputFile)) {
-                    $results = file($outputFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+                    $results = json_decode(file_get_contents($outputFile), true);
 
-                    foreach ($results as $line) {
-                        $path = $this->extractPathFromFfufOutput($line);
-                        Log::info("Result found: {$path} for host: {$host->url}");
+                    $urls = [];
+
+                    foreach ($results['results'] as $key => $result) {
+                        if (isset($result['url'])) {
+                            $urls[] = $result['url'];
+                        }
+
+                        $path = $result['input']['FUZZ'];
+                        $status_code = $result['status'];
+                        
+                        Log::info("Result found: {$path} for host: {$host->url} with status code: {$status_code}");
 
                         if ($path) {
                             Directory::create([
                                 'host_id' => $host->id,
                                 'path' => $path,
+                                'host_url' => $host->url,
+                                'status_code' => $status_code
                             ]);
                         }
                     }

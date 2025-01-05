@@ -9,7 +9,8 @@ class Directory extends Model
     protected $fillable = [
         'host_id',
         'host_url',
-        'path'
+        'path',
+        'status_code'
     ];
 
     public function host()
