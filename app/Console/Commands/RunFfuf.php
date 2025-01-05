@@ -61,7 +61,7 @@ class RunFfuf extends Command
                             Directory::create([
                                 'host_id' => $host->id,
                                 'path' => $path,
-                                'host_url' => $host->url,
+                                'host_url' => $result['url'],
                                 'status_code' => $status_code
                             ]);
                         }
