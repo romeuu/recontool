@@ -26,10 +26,9 @@ class MonitorSubdomains extends Command
     
     protected $telegramService;
 
-    public function __construct(TelegramBotService $telegramService)
+    public function __construct()
     {
         parent::__construct();
-        $this->telegramService = $telegramService;
     }
 
     /**

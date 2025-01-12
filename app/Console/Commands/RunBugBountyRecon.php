@@ -33,7 +33,7 @@ class RunBugBountyRecon extends Command
         // Lock file
         file_put_contents(storage_path('app/private/recon.lock'), 'locked', FILE_USE_INCLUDE_PATH);
 
-        $programs = Program::all();
+        $programs = Program::where('active', true)->get();
         $bar = $this->output->createProgressBar(count($programs));
         $bar->start();
 
@@ -56,10 +56,18 @@ class RunBugBountyRecon extends Command
             shell_exec("mkdir $pathFolder");
 
             $wildcardsFile = storage_path('app/private/'.$program->name.'/wildcards.txt');
-            $this->exportWildcardsToFile($wildcardsFile, $program);
+            $wildcardsFileFormatted = storage_path('app/private/'.$program->name.'/wildcards-formatted.txt');
+            $this->exportWildcardsToFile($wildcardsFile, $wildcardsFileFormatted, $program);
 
-            $domainsFile = storage_path('app/private/'.$program->name.'/domains.txt');
+            $domainsFile = storage_path('app/private/'.$program->name.'/domains_assetfinder.txt');
             $this->runAssetFinder($wildcardsFile, $domainsFile);
+
+            $domainsFileSubfinder = storage_path('app/private/'.$program->name.'/domains_subfinder.txt');
+            $this->runSubfinder($wildcardsFileFormatted, $domainsFileSubfinder);
+
+            $this->uniteSubdomainFiles($program);
+
+            $fullDomainsList = storage_path('app/private/'.$program->name.'/all_subs.txt');
 
             $hasIpsInScope = InScopeIp::where('program_id', $program->id)->exists();
 
@@ -67,7 +75,7 @@ class RunBugBountyRecon extends Command
                 $resultsAmassFilePath = storage_path('app/private/'.$program->name.'/amass-results.txt');
                 $resolversFilePath = storage_path('app/private/resolvers.txt');
 
-                $this->runAmass($domainsFile, $resultsAmassFilePath, $resolversFilePath);
+                $this->runAmass($fullDomainsList, $resultsAmassFilePath, $resolversFilePath);
 
                 $validSubdomains = $this->subdomainFilterService->filterValidSubdomainsIP($program);
 
@@ -123,20 +131,26 @@ class RunBugBountyRecon extends Command
         }
     }
 
-    private function exportWildcardsToFile(string $filePath, $program) {
+    private function exportWildcardsToFile(string $filePath, string $filePathWithoutDots, $program) {
         $wildcards = $program->wildcards()->get();
 
         $wildcardsList = $wildcards->pluck('wildcard')->toArray();
+        $wildcardsWithoutDots = $wildcards->pluck('wildcard')
+                                      ->map(fn($wildcard) => ltrim($wildcard, '.'))
+                                      ->toArray();
 
         $wildcardsString = implode("\n", $wildcardsList);
+        $wildcardsWithoutDotsString = implode("\n", $wildcardsWithoutDots);
 
         file_put_contents($filePath, $wildcardsString, FILE_USE_INCLUDE_PATH);
+        file_put_contents($filePathWithoutDots, $wildcardsWithoutDotsString, FILE_USE_INCLUDE_PATH);
 
-        if (!file_exists($filePath) || filesize($filePath) === 0) {
+        if ((!file_exists($filePath) || filesize($filePath) === 0) || (!file_exists($filePathWithoutDots) || filesize($filePathWithoutDots) === 0)) {
             throw new \Exception('No wildcards found to export.');
         }
 
         $this->info('Wildcards exported to ' . $filePath);
+        $this->info('Formatted wildcards exported to ' . $filePathWithoutDots);
     }
 
     private function runAssetFinder($wildcardsFile, $domainsFile) {
@@ -145,16 +159,14 @@ class RunBugBountyRecon extends Command
         $assetfinder = new Process(['assetfinder', '-subs-only']);
         $anew = new Process(['anew', $domainsFile]);
 
-        // 1. Lee el contenido del archivo wildcards
         $wildcards = file_get_contents($wildcardsFile);
 
         if (!$wildcards) {
             throw new \Exception('Wildcards file is empty or not readable.');
         }
 
-        // 2. Ejecuta assetfinder con los wildcards como entrada
         $assetfinder->setInput($wildcards);
-        $assetfinder->setTimeout(600); // 10 minutos
+        $assetfinder->setTimeout(600);
 
         $assetfinder->run();
 
@@ -164,7 +176,6 @@ class RunBugBountyRecon extends Command
 
         $this->info("Appending results with anew...");
 
-        // 3. Pasa la salida de assetfinder a anew
         $anew->setInput($assetfinder->getOutput());
         $anew->setTimeout(600);
 
@@ -175,6 +186,37 @@ class RunBugBountyRecon extends Command
         }
 
         $this->info('Assetfinder finished successfully.');
+    }
+
+    private function runSubfinder($wildcardsFile, $domainsFile) {
+        $this->info("Starting recon process with subfinder...");
+
+        $command = [
+            'subfinder',
+            '-dL', $wildcardsFile,
+            '-silent',
+            '-all',
+            '-recursive',
+            '-o', $domainsFile,
+        ];
+
+        $subfinder = new Process($command);
+
+        $wildcards = file_get_contents($wildcardsFile);
+
+        if (!$wildcards) {
+            throw new \Exception('Wildcards file is empty or not readable.');
+        }
+
+        $subfinder->setTimeout(600);
+
+        $subfinder->run();
+
+        if (!$subfinder->isSuccessful()) {
+            throw new \Exception('Subfinder failed: ' . $subfinder->getErrorOutput());
+        }
+
+        $this->info('Subfinder finished successfully.');
     }
 
     private function runAmass($subdomainsFilePath, $resultsAmassFilePath, $resolversFilePath) {
@@ -216,9 +258,9 @@ class RunBugBountyRecon extends Command
         $this->info("Starting recon process with httprobe...");
     
         $subdomainsFilePath = escapeshellarg($subdomainsFilePath);
-        $command = "cat {$subdomainsFilePath} | httprobe -c 80 --prefer-https";
+        $command = "cat {$subdomainsFilePath} | httprobe -c 200 -p http:80 -p https:443 -p http:8080 -p https:8443 -p https:8080 -p http:8443 --prefer-https";
         $process = Process::fromShellCommandline($command);
-        $process->setTimeout(600);
+        $process->setTimeout(1200);
         $process->run();
 
         if (!$process->isSuccessful()) {
@@ -254,5 +296,22 @@ class RunBugBountyRecon extends Command
         }
 
         return null;
+    }
+
+    private function uniteSubdomainFiles($program) {
+        $outputDir = escapeshellarg(storage_path('app/private/'.$program->name));
+        $outputFile = "{$outputDir}/all_subs.txt";
+
+        $command = [
+            'bash',
+            '-c',
+            "cat {$outputDir}/domains_*.txt | sort -u | anew {$outputFile}"
+        ];
+
+        $process = new Process($command);
+        $process->setTimeout(60);
+        $process->run();
+
+        $this->info('United subdomains file finished successfully.');
     }
 }

@@ -15,5 +15,5 @@ if (env('APP_ENV') === 'PROD') {
     Schedule::command(RunBugBountyRecon::class, [])->everyTwoHours();
 
     //Schedule::command(MonitorSubdomains::class, [])->everyTwoHours();
-    Schedule::command(MonitorHosts::class, [])->everyTwoHours();
+    //Schedule::command(MonitorHosts::class, [])->everyTwoHours();
 }

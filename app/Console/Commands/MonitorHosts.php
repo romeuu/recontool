@@ -5,7 +5,6 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use App\Models\Program;
 use App\Models\Host;
-use App\Services\TelegramBotService;
 use Illuminate\Support\Facades\Log;
 
 class MonitorHosts extends Command
@@ -24,12 +23,9 @@ class MonitorHosts extends Command
      */
     protected $description = 'Command description';
 
-    protected $telegramService;
-
-    public function __construct(TelegramBotService $telegramService)
+    public function __construct()
     {
         parent::__construct();
-        $this->telegramService = $telegramService;
     }
 
     /**
@@ -43,7 +39,8 @@ class MonitorHosts extends Command
             
                 sleep(300);
             }
-            $programs = Program::all();
+            $programs = Program::where('active', true)->get();
+            $messages = [];
 
             foreach ($programs as $program) {
                 $hosts = Host::where('program_id', $program->id)->get();
@@ -57,15 +54,15 @@ class MonitorHosts extends Command
                     foreach ($newHosts as $host) {
                         $message .= $host->url . "\n";
                     }
-                    $this->telegramService->sendMessage(getenv('TELEGRAM_CHAT_ID'), $message);
-                    //$this->telegramService->sendFileToUser(getenv('TELEGRAM_CHAT_ID'), $filePath);
+                    $messages[$program->name] = $message;
                 } else {
-                    $this->telegramService->sendMessage(getenv('TELEGRAM_CHAT_ID'), "No new hosts found for {$program->name}.");
+                    $messages[$program->name] = "No new hosts found for {$program->name}.";
+                    Log::info("No new hosts found for {$program->name}.");
                 }
             }
 
             Log::info('Host monitoring completed.');
-            $this->info('Host monitoring completed.');
+            $this->output->writeln(json_encode($messages));
 
         } catch (\Throwable $e) {
         Log::error('Error during command execution: ' . $e->getMessage());
