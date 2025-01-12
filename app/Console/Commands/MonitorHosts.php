@@ -39,7 +39,7 @@ class MonitorHosts extends Command
             
                 sleep(300);
             }
-            $programs = Program::all();
+            $programs = Program::where('active', true)->get();
             $messages = [];
 
             foreach ($programs as $program) {

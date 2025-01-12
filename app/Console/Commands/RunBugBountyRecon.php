@@ -33,7 +33,7 @@ class RunBugBountyRecon extends Command
         // Lock file
         file_put_contents(storage_path('app/private/recon.lock'), 'locked', FILE_USE_INCLUDE_PATH);
 
-        $programs = Program::all();
+        $programs = Program::where('active', true)->get();
         $bar = $this->output->createProgressBar(count($programs));
         $bar->start();
 
